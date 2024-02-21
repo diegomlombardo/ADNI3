@@ -1,0 +1,547 @@
+
+library(readxl)
+library(sjPlot)
+library(table1)
+
+
+library(readxl)
+
+library(dplyr)
+library(readxl)
+
+library(glmnet)
+
+library(glmmLasso)
+
+library(caret)
+
+library(sjPlot)
+library(devtools)
+library(interactions)
+
+library(egg)
+
+library(yarrr)
+
+
+setwd(dir = "/Users/diegomartinlombardo/Desktop/AD_anticorrelation”)
+
+data=read_excel("PTDEMOG_30Nov2023 .xlsx")
+
+data2=read_excel("cognition_MOCA_networks.xlsx")
+
+
+data3=read_excel("demographics_24Sep2023.xslx”)
+
+Merged=merge(data,data2,by="ID", all.y=true)
+
+abline(v = C, col="red", lwd=3, lty=2)
+
+rug(WildObj$bootEstParam[,6], ticksize = 0.03, side = 1, lwd = 0.1, col = "purple",
+    quiet = getOption("warn") < 0)
+
+
+###### see whether in a set of half partitions the results replicate in both samples ####
+
+
+
+
+
+
+
+
+
+
+
+
+
+##### Look for group differences ########
+
+data5=read_excel("cognitive_clinics_anticorr.xlsx")
+
+stat.test <- data5 %>%
+   t_test( DMN_DAN~ diagnoses,alternative = "two.sided", var.equal = FALSE)
+
+
+##### TABLE1 #### 
+
+
+library(readxl)
+
+Merged2=merge(Merged,data3,by="ID", all.y=true)
+
+
+
+
+%%% Change DOB to age %%%%% 
+ 
+
+Merged2$PTDOBYY=(2017-Merged2$PTDOBYY)
+
+
+
+data=read_excel("Master_final_data_base_DL.xlsx")
+
+
+set.seed(1)
+
+half_size <- floor(0.67* nrow(data)) 
+
+random_sample <- sample(seq_len(nrow(data)), size = half_size)
+
+train <- data[random_sample,]
+
+test <- data[-random_sample,]
+
+train_control<-trainControl(method="repeatedcv", number=5, repeats=5, search=“random”)
+
+
+model <- train(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN, data =train, selectionFunction = "best",method = "lm", trControl = train_control, preProcess = c("center", "scale"),savePredictions= "final")
+
+
+fold_data <- lapply(model$control$index, function(index) train[index,]) %>% 
+    bind_rows(.id = "Fold")
+
+########## FIGURE 3 predictive models ################
+
+
+
+
+#### PLOT the superimposed  regression lines for the for 100 models (20 folds repeated 10 times) the first 25 FOLDS for visualization####
+
+ plot1=ggplot(fold_data, aes(DMN_DAN,MOCA,col = Fold,fill=Fold),size=0.5, alpha=0.1) + 
+     geom_point(shape = 21, fill = "red3",
+               color = "red2", size = 3) +  theme_classic() + labs(x =  "DMN DAN anti correlation", y = "MOCA") + theme(axis.title = element_text(size = 15))+theme(axis.line = element_line(linewidth = 1, colour = "black"))+ theme(axis.text.y = element_text(size = 15))+ theme(axis.text.x = element_text(size = 15))+
+      geom_smooth(method = "lm", formula="y~x", alpha=0.01,show.legend = FALSE)  + scale_color_manual(values=c("Red","Purple","#006000","Brown","burlywood4","chocolate1","chartreuse4","blue4","darkorchid","darkmagenta","gray","khaki1","mediumorchid4","lightsteelblue1","navyblue","royalblue1","plum","sienna1","yellow3","blue4","tan1","violetred3","springgreen","yellow","burlywood4"))
+
+
+
+### Tunning hyperparamater with a grid to replicavility and test model performance ### 
+observed_C=test[ ,c("MOCA")]
+
+observed_C <- as.numeric(unlist(observed_C))
+mtry <- sqrt(ncol(train))
+
+coco <- expand.grid(.mtyr=seq(0,0.1,by=0.01))
+mdl = train(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN,train,method="lm",
+trControl=train_control, tunegrid=coco )
+
+p_model<-predict(mdl,newdata=test)
+r_model= cor.test (p_model,observed_C)
+
+
+
+plot2=plot(p_model,observed_C, xlab="Observed MOCA" ,
+         ylab="Predicted MOCA (repeated kflolds)",font.lab=1,cex.lab=1, cex.sub=1,pch = 19, frame = FALSE)
+
+reg1<-lm(p_model~observed_C)
+
+abline(reg1, col=“red”,lwd=5)
+
+
+
+### Now we go with LASSO ####
+
+train_y=train[ ,c("MOCA”)]
+
+train_y <- as.numeric(unlist(train_y))
+
+train_x=model.matrix(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,train)[, -1] #Dropping the intercept column)
+
+
+
+ ridge1_cv <- cv.glmnet(x = train_x, y =train_y,
+                        ## type.measure: loss to use for cross-validation.
+                        type.measure = "mse",
+                        ## K = 10 is the default.
+                        nfold = 10,
+                        ## ‘alpha = 1’ is the lasso penalty, and ‘alpha = 0’ the ridge penalty.
+                        alpha = 0)
+ plot(ridge1_cv)
+ best_ridge_coef <- as.numeric(coef(ridge1_cv, s = ridge1_cv$lambda.1se))[-1]
+ alasso1_cv <- cv.glmnet(x = train_x, y = train_y,
+                         type.measure = "mse",
+                        nfold = 10,
+                         alpha = 1,
+                         penalty.factor = 1 / abs(best_ridge_coef),
+                         keep = TRUE)
+ best_alasso_coef<- coef(alasso1_cv, s = alasso1_cv$lambda.1se)
+ best_alasso_coef[-1,] 
+
+  PTDOBYY         PTEDUCAT         PTGENDER          DMN_DAN PTEDUCAT:DMN_DAN 
+       0.0000000        0.1547284        0.0000000       -3.9405107        0.0000000
+
+
+ train_control<-trainControl(method="repeatedcv", number=20, repeats=10)
+
+mdl_lasso <- train(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,
+   data = train,
+   method = "glmnet",
+   metric = "RMSE",
+   preProcess = c("center", "scale"),
+   tuneGrid = expand.grid(
+     .alpha = 1,  # optimize a lasso regression
+     .lambda = seq(0, 5, length.out = 101)
+),
+   trControl = train_control)
+
+coef(mdl_lasso$finalModel, mdl_lasso$finalModel$lambdaOpt)
+
+
+x=model.matrix(MOCA ~PTDOBYY +PTEDUCAT+PTGENDER+ DMN_DAN,Merged2)[, -1] #Dropping the intercept column)
+
+y=Merged2[ ,c("MOCA")]
+
+fit.ridge <- ridge.proj(x, y,multiplecorr.method = "bonferroni")
+ 
+
+fit.ridge.scaled  <- ridge.proj(x, y, betainit = "scaled lasso",multiplecorr.method = "bonferroni")
+pvalues=fit.ridge.scaled$pval.corr
+fit.lasso.robust <- lasso.proj(x, y, robust = TRUE)
+pvalues_robust=fit.lasso.robust $pval.corr 
+
+
+##### Make predictions on test data and test model performance #### 
+
+pred.full <- predict(mdl_lasso,newdata=test)
+pred.lasso <- as.vector(predict(mdl_lasso,test , s=mdl_lasso$finalModel$lambdaOpt))
+
+Actual_MOCA= test[ ,c("MOCA")]
+Actual_MOCA <- as.numeric(unlist(Actual_MOCA))
+
+cor(Actual_MOCA,pred.lasso)
+
+plot3=plot(Actual_MOCA,pred.lasso , xlab="Observed MOCA" ,
+         ylab="Predicted MOCA (LASSO)",font.lab=1,cex.lab=1, cex.sub=1,pch = 19, frame = FALSE)
+
+reg1<-lm(pred.lasso ~Actual_MOCA)
+
+
+abline(reg1, col=“red”,lwd=5)
+
+
+#######Check in the half sample coefs the last graph of FIG3 #####
+
+
+#### You can run several replication and discovery samples and see if the IC lands outside 0 #####
+#### Testing the robustness of half-random split of the betas before ####
+
+library(parallel)
+library(readxl)
+library(sjPlot)
+
+library(boot)
+library(lmboot)
+
+set.seed(1);
+
+half_size <- floor(0.50 * nrow(data))
+
+random_sample <- sample(seq_len(nrow(data)), size = half_size)
+
+discovery <- data[random_sample, ]
+
+replication <- data[-random_sample, ]
+
+
+dev.new()
+Seed=set.seed(1)
+
+
+
+par(mfrow=c(1,2))
+
+
+y=discovery[ ,c("MOCA")]
+y <- as.numeric(unlist(y))
+
+
+x1=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN, discovery)[, -1] #Dropping the intercept column)
+
+WildObj <- wild.boot(y ~ x1, B=60000, seed=Seed)
+WildObj$origEstParam
+mean(WildObj$bootEstParam[,3],)
+
+fig1=hist(WildObj$bootEstParam[,3],main=expression(paste(" boostraped samples of ",beta,~ "coeficients (linear regression) in discovery sample")),
+xlab= " Betas DMN DAN connectivity", ylab= "Count (in 60000 Boostrap Replications)",col=c("lightblue"),cex.axis = 1.5, cex.lab = 1.2)
+
+A=quantile(WildObj$bootEstParam[,3], probs=c(.025))
+B=quantile(WildObj$bootEstParam[,3], probs=c(.975))
+C=mean(WildObj$bootEstParam[,3],)
+abline(v = A, col="black", lwd=2, lty=1)
+abline(v = B, col="blue", lwd=2, lty=1)
+abline(v = C, col="red", lwd=3, lty=2)
+
+rug(WildObj$bootEstParam[,3], ticksize = 0.03, side = 1, lwd = 0.1, col = "purple",
+    quiet = getOption("warn") < 0)
+
+y=replication[ ,c("MOCA")]
+
+y <- as.numeric(unlist(y))
+x1=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN,replication)[, -1] #Dropping the intercept column)
+
+WildObj <- wild.boot(y ~ x1, B=60000, seed=Seed)
+WildObj$origEstParam
+mean(WildObj$bootEstParam[,3],)
+
+fig2=hist(WildObj$bootEstParam[,3],main=expression(paste(" boostraped samples of ",beta,~ "coeficients (linear regression) in replication sample")),
+xlab= " Betas DMN DAN connectivity", ylab= "Count (in 60000 Boostrap Replications)",col=c("lightblue"),cex.axis = 1.5, cex.lab = 1.2)
+
+A=quantile(WildObj$bootEstParam[,3], probs=c(.025))
+B=quantile(WildObj$bootEstParam[,3], probs=c(.975))
+C=mean(WildObj$bootEstParam[,3],)
+abline(v = A, col="black", lwd=2, lay=1)
+abline(v = B, col="blue", lwd=2, lty=1)
+abline(v = C, col="red", lwd=3, lty=2)
+
+rug(WildObj$bootEstParam[,3], ticksize = 0.03, side = 1, lwd = 0.1, col = "purple",
+    quiet = getOption("warn") < 0)
+
+
+FIGURE 5
+
+###### see whether in a set of half partitions the results replicate in both samples for the interactions ####
+
+
+library(parallel)
+library(readxl)
+library(sjPlot)
+
+library(boot)
+library(lmboot)
+
+set.seed(1);
+
+half_size <- floor(0.50 * nrow(data))
+
+random_sample <- sample(seq_len(nrow(data)), size = half_size)
+
+discovery <- data[random_sample, ]
+
+replication <- data[-random_sample, ]
+
+
+dev.new()
+
+
+par(mfrow=c(1,2))
+
+
+y=discovery[ ,c("MOCA")]
+
+
+
+x1=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN+PTEDUCAT*DMN_DAN, discovery)[, -1] #Dropping the intercept column)
+
+WildObj <- wild.boot(y ~ x1, B=60000, seed=Seed)
+WildObj$origEstParam
+mean(WildObj$bootEstParam[,4],)
+
+fig1=hist(WildObj$bootEstParam[,4],main=expression(paste(" boostraped samples of ",beta,~ "coeficients (linear regression) in discovery sample")),
+xlab= " Betas DMN DAN connectivity", ylab= "Count (in 60000 Boostrap Replications)",col=c("lightblue"),cex.axis = 1.5, cex.lab = 1.2)
+
+A=quantile(WildObj$bootEstParam[4], probs=c(.025))
+B=quantile(WildObj$bootEstParam[,4], probs=c(.975))
+C=mean(WildObj$bootEstParam[,4],)
+abline(v = A, col="black", lwd=2, lty=1)
+abline(v = B, col="blue", lwd=2, lty=1)
+abline(v = C, col="red", lwd=3, lty=2)
+
+rug(WildObj$bootEstParam[,4], ticksize = 0.03, side = 1, lwd = 0.1, col = "purple",
+    quiet = getOption("warn") < 0)
+
+y=replication[ ,c("MOCA")]
+
+x1=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN+PTEDUCAT*DMN_DAN,replication)[, -1] #Dropping the intercept column)
+
+WildObj <- wild.boot(y ~ x1, B=60000, seed=Seed)
+WildObj$origEstParam
+mean(WildObj$bootEstParam[,4],)
+
+fig2=hist(WildObj$bootEstParam[,4],main=expression(paste(" boostraped samples of ",beta,~ "coeficients (linear regression) in replication sample")),
+xlab= " Betas DMN DAN connectivity", ylab= "Count (in 60000 Boostrap Replications)",col=c("lightblue"),cex.axis = 1.5, cex.lab = 1.2)
+
+A=quantile(WildObj$bootEstParam[,4], probs=c(.025))
+B=quantile(WildObj$bootEstParam[,4], probs=c(.975))
+C=mean(WildObj$bootEstParam[,4],)
+abline(v = A, col="black", lwd=2, lay=1)
+abline(v = B, col="blue", lwd=2, lty=1)
+abline(v = C, col="red", lwd=3, lty=2)
+
+rug(WildObj$bootEstParam[,4], ticksize = 0.03, side = 1, lwd = 0.1, col = "purple",
+    quiet = getOption("warn") < 0)
+
+
+NOW look with LASSO and gradient boosting machines
+
+train_y=train[ ,c("MOCA”)]
+
+train_y <- as.numeric(unlist(train_y))
+
+train_x=model.matrix(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,train)[, -1] #Dropping the intercept column)
+
+
+
+ ridge1_cv <- cv.glmnet(x = train_x, y =train_y,
+                        ## type.measure: loss to use for cross-validation.
+                        type.measure = "mse",
+                        ## K = 10 is the default.
+                        nfold = 10,
+                        ## ‘alpha = 1’ is the lasso penalty, and ‘alpha = 0’ the ridge penalty.
+                        alpha = 0)
+ plot(ridge1_cv)
+ best_ridge_coef <- as.numeric(coef(ridge1_cv, s = ridge1_cv$lambda.1se))[-1]
+ alasso1_cv <- cv.glmnet(x = train_x, y = train_y,
+                         type.measure = "mse",
+                        nfold = 10,
+                         alpha = 1,
+                         penalty.factor = 1 / abs(best_ridge_coef),
+                         keep = TRUE)
+ best_alasso_coef<- coef(alasso1_cv, s = alasso1_cv$lambda.1se)
+ best_alasso_coef[-1,] 
+
+  PTDOBYY         PTEDUCAT         PTGENDER          DMN_DAN PTEDUCAT:DMN_DAN 
+       0.0000000        0.1547284        0.0000000       -3.9405107        0.0000000
+
+
+ train_control<-trainControl(method="repeatedcv", number=20, repeats=10)
+
+mdl_lasso <- train(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,
+   data = train,
+   method = "glmnet",
+   metric = "RMSE",
+   preProcess = c("center", "scale"),
+   tuneGrid = expand.grid(
+     .alpha = 1,  # optimize a lasso regression
+     .lambda = seq(0, 5, length.out = 101)
+),
+   trControl = train_control)
+
+coef(mdl_lasso$finalModel, mdl_lasso$finalModel$lambdaOpt)
+
+
+x=model.matrix(MOCA ~PTDOBYY +PTEDUCAT+PTGENDER+ DMN_DAN,Merged2)[, -1] #Dropping the intercept column)
+
+y=Merged2[ ,c("MOCA")]
+
+fit.ridge <- ridge.proj(x, y,multiplecorr.method = "bonferroni")
+ 
+
+fit.ridge.scaled  <- ridge.proj(x, y, betainit = "scaled lasso",multiplecorr.method = "bonferroni")
+pvalues=fit.ridge.scaled$pval.corr
+fit.lasso.robust <- lasso.proj(x, y, robust = TRUE)
+pvalues_robust=fit.lasso.robust $pval.corr 
+
+
+##### Make predictions on test data and test model performance #### 
+
+pred.full <- predict(mdl_lasso,newdata=test)
+pred.lasso <- as.vector(predict(mdl_lasso,test , s=mdl_lasso$finalModel$lambdaOpt))
+
+Actual_MOCA= test[ ,c("MOCA")]
+Actual_MOCA <- as.numeric(unlist(Actual_MOCA))
+
+cor(Actual_MOCA,pred.lasso)
+
+plot3=plot(Actual_MOCA,pred.lasso , xlab="Observed MOCA" ,
+         ylab="Predicted MOCA (LASSO)",font.lab=1,cex.lab=1, cex.sub=1,pch = 19, frame = FALSE)
+
+reg1<-lm(pred.lasso ~Actual_MOCA)
+
+
+abline(reg1, col=“red”,lwd=5)
+
+
+######## I used GBM because in half split partitions the results may change due to change of seed.. needs additional conformation with hyperparameter-free methods if the interaction education DMN ~ DAN is there or not ############ 
+
+library(gbm)
+
+model_gbmDMN_DAN = gbm(ge +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,,
+
+                data = train,
+
+                distribution = "gaussian",
+
+                cv.folds = 10,
+
+                shrinkage = .01,
+
+                n.minobsinnode = 10,
+
+                n.trees = 1000)
+
+summary (model_gbmDMN_DAN)
+
+
+##### Look for group differences in DMN DAN anti correlation ########
+
+############ FIGURE 1 ############
+ 
+
+data=read_excel("Master_final_data_base_DLombardo.xlsx”)
+
+stat.test1 <- data%>%
+   t_test( DMN_DAN~ diagnoses,alternative = "two.sided", var.equal = FALSE)
+
+stat.test2 <- data %>%
+   t_test( DMN_DAN~ category,alternative = "two.sided", var.equal = FALSE)
+
+
+summary(stat_test1)
+
+summary(stat_test2) 
+ 
+
+par(mfrow=c(1,2))
+
+library(ggpubr)
+
+
+
+ggboxplot(data, x = "category", y = "DMN_DAN",
+          color = "category", palette=c("#FC4E07","#BB3099","#EE0099","#0000AC"),add="jitter",notch = TRUE)
+
+ stat_compare_means(comparisons = my_comparisons)
+ stat_compare_means(label.y = 50) 
+
+ggboxplot(data, x = "diagnoses", y = "DMN_DAN",
+          color = "diagnoses",palette = c("#00AFBB", "#E7B800", "#FC4E07"),add="jitter",notch = TRUE)
+
+##### TABLE1 #### 
+
+library(readxl)
+library(sjPlot)
+library(table1)
+library(gtsummary)
+
+library(arsenal)
+library(magrittr)
+
+data=read_excel("Master_final_data_base_DLombardo.xlsx")
+
+data$diagnoses=as.factor(data$diagnoses)
+
+table1::label(data$diagnoses)  <- "Amyloid and cognitive status"
+
+table1::label(data$Age)  <- "Age (years)"
+table1::label(data$PTEDUCAT)  <- "Education (years)"
+table1::label(data$PTGENDER)  <- "Sex"
+
+table1::label(data$MOCA)  <- "MOCA score"
+
+table1::label(data$MMSCORE)  <- "MM score"
+
+table1::label(data$DMN_DAN)  <- "DMN DAN anticorrelation"
+
+table1::label(data$average_FD)  <- "Framewise displacement (FD)"
+
+
+table1 <- tableby(datat$category~ data$Age + data$PTEDUCAT+data$PTGENDER+data$MOCA+data$DMN_DAN+data$MMSCORE+data$average_FD, data=data)
+
+write2word(table1,title= “Table 1”)
+
+
+Supplementary FIGURE MOCA VS FD 
+plot(data111$average_FD,data111$MOCA,main = "MOCA score vs mean head movement",xlab = "FD (in mm)",ylab = "MOCA score")
+
+abline(lm(MOCA ~average_FD)   theme_minimal()
