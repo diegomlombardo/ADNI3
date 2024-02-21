@@ -1,0 +1,36 @@
+
+
+
+data=read_excel("Demogr_cognition_FINAL_FLICA_with_diagnose.xlsx")
+
+
+
+table1::label(data$MMSE)  <- “MMSE”
+
+table1::label(data$Age)  <- “Age (years)"
+
+table1::label(data$NPI)  <- “NPI”
+
+table1::label(datat$PTGENDER)  <- “Sex”
+
+table1::label(data$PTEDUCAT)  <- “Education”
+
+table1::label(data$RAVLT_immediate)  <- "RAVLT_immediate"
+
+table1::label(data$LIMMTOTAL)  <- "LIMMTOTAL"
+
+table1::label(data$RAVLT_perc_forgetting)  <- "RAVLT_perc_forgetting"
+
+table1::label(data$TRAASCOR)  <- “TTT score A”
+
+table1::label(data$TRABSCOR)  <- “TTT score B”
+
+
+
+table1::label(data$LDELTOTAL)  <- "LDELTOTAL"
+
+
+table1::label(data$diagnoses)  <- “Clinical category”
+
+
+tab1 <- tableby(~ Age + PTGENDER +PTEDUCAT+MMSE+data$NPI+RAVLT_immediate+RAVLT_perc_forgetting+ TRAASCOR+ TRABSCOR+NPI+ LIMMTOTAL+LDELTOTAL, data=data)
