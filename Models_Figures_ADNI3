@@ -52,14 +52,6 @@ stat.test <- data5 %>%
 
 
 
-%%% Change DOB to age %%%%% 
- 
-
-Merged2$PTDOBYY=(2017-Merged2$PTDOBYY)
-
-
-
-
 
 Run the regression linear models with k-folds cross-validation and boostrap in half-split sub-samples 
 
@@ -431,7 +423,7 @@ library(sjPlot)
 library(boot)
 library(lmboot)
 
-set.seed(1);
+set.seed(15);
 
 half_size <- floor(0.50 * nrow(data))
 
@@ -473,7 +465,7 @@ rug(WildObj$bootEstParam[,4], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
 
 y=replication[ ,c("MOCA")]
 
-x1=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN+PTEDUCAT*DMN_DAN,replication)[, -1] #Dropping the intercept column)
+x1=model.matrix(MOCA ~ Age+ PTEDUCAT+ DMN_DAN+PTEDUCAT*DMN_DAN,replication)[, -1] #Dropping the intercept column)
 
 WildObj <- wild.boot(y ~ x1, B=60000, seed=Seed)
 WildObj$origEstParam
@@ -502,28 +494,6 @@ train_y <- as.numeric(unlist(train_y))
 train_x=model.matrix(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,train)[, -1] #Dropping the intercept column)
 
 
-
- ridge1_cv <- cv.glmnet(x = train_x, y =train_y,
-                        ## type.measure: loss to use for cross-validation.
-                        type.measure = "mse",
-                        ## K = 10 is the default.
-                        nfold = 10,
-                        ## ‘alpha = 1’ is the lasso penalty, and ‘alpha = 0’ the ridge penalty.
-                        alpha = 0)
- plot(ridge1_cv)
- best_ridge_coef <- as.numeric(coef(ridge1_cv, s = ridge1_cv$lambda.1se))[-1]
- alasso1_cv <- cv.glmnet(x = train_x, y = train_y,
-                         type.measure = "mse",
-                        nfold = 10,
-                         alpha = 1,
-                         penalty.factor = 1 / abs(best_ridge_coef),
-                         keep = TRUE)
- best_alasso_coef<- coef(alasso1_cv, s = alasso1_cv$lambda.1se)
- best_alasso_coef[-1,] 
-
- 
-
-
  train_control<-trainControl(method="repeatedcv", number=20, repeats=10)
 
 mdl_lasso <- train(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,
@@ -540,7 +510,7 @@ mdl_lasso <- train(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,
 coef(mdl_lasso$finalModel, mdl_lasso$finalModel$lambdaOpt)
 
 
-x=model.matrix(MOCA ~PTDOBYY +PTEDUCAT+PTGENDER+ DMN_DAN,Merged2)[, -1] #Dropping the intercept column)
+x=model.matrix(MOCA ~Age +PTEDUCAT+PTGENDER+ DMN_DAN,data)[, -1] #Dropping the intercept column)
 
 y=Merged2[ ,c("MOCA")]
 
@@ -552,6 +522,8 @@ pvalues=fit.ridge.scaled$pval.corr
 fit.lasso.robust <- lasso.proj(x, y, robust = TRUE)
 pvalues_robust=fit.lasso.robust $pval.corr 
 
+
+This gives a) the coefficients for the lasso regression models in Table 2 and b) the pvalues after Bonferroni correction
 
 ##### Make predictions on test data and test model performance #### 
 
