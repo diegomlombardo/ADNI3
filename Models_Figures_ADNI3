@@ -50,10 +50,10 @@ stat.test <- data5 %>%
    t_test( DMN_DAN~ diagnoses,alternative = "two.sided", var.equal = FALSE)
 
 
-
-
-
 Run the regression linear models with k-folds cross-validation and boostrap in half-split sub-samples 
+
+########## FIGURE 3 predictive models ################
+
 
 set.seed(15)
 
@@ -129,7 +129,7 @@ rug(WildObj$bootEstParam[,5], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
 
 
 
-To test wheter differnt random split partition affects results: 
+To test wheter different random-split partitions affects the results: 
 
 set.seed(55)
 
@@ -198,11 +198,8 @@ rug(WildObj$bootEstParam[,5], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
     quiet = getOption("warn") < 0)
 
 
-
 model <- train(MOCA ~Age+PTEDUCAT+ PTGENDER+ DMN_DAN, data =train, selectionFunction = "best",method = "lm", trControl = train_control, preProcess = c("center", "scale"),savePredictions= "final")
 
-
-########## FIGURE 3 predictive models ################
 
 Having in account confounding factors such as PET tau at temporal meta ROIs
 
@@ -269,20 +266,19 @@ rug(WildObj$bootEstParam[,3], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
       geom_smooth(method = "lm", formula="y~x", alpha=0.01,show.legend = FALSE)  + scale_color_manual(values=c("Red","Purple","#006000","Brown","burlywood4","chocolate1","chartreuse4","blue4","darkorchid","darkmagenta","gray","khaki1","mediumorchid4","lightsteelblue1","navyblue","royalblue1","plum","sienna1","yellow3","blue4","tan1","violetred3","springgreen","yellow","burlywood4"))
 
 
-
 ### Tunning hyperparamater with a grid to replicavility and test model performance ### 
+
 observed_C=test[ ,c("MOCA")]
 
 observed_C <- as.numeric(unlist(observed_C))
 mtry <- sqrt(ncol(train))
 
 coco <- expand.grid(.mtyr=seq(0,0.1,by=0.01))
-mdl = train(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN,train,method="lm",
+mdl = train(MOCA ~Age +PTEDUCAT+ DMN_DAN,train,method="lm",
 trControl=train_control, tunegrid=coco )
 
 p_model<-predict(mdl,newdata=test)
 r_model= cor.test (p_model,observed_C)
-
 
 
 plot2=plot(p_model,observed_C, xlab="Observed MOCA" ,
@@ -297,9 +293,8 @@ abline(reg1, col=“red”,lwd=5)
 ### Now we go with LASSO ####
 
 
+x=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN+SUVR_temporalmetaro,data)[, -1] #Dropping the intercept column)
 
-
-x=model.matrix(MOCA ~Age +PTEDUCAT+ DMN_DAN,data)[, -1] #Dropping the intercept column)
 
 y=data[ ,c("MOCA")]
 
@@ -311,6 +306,42 @@ pvalues=fit.ridge.scaled$pval.corr
 fit.lasso.robust <- lasso.proj(x, y, robust = TRUE)
 pvalues_robust=fit.lasso.robust $pval.corr 
 
+Resutls Robust LASSO while includign SUVR_temporalmetaroi
+
+   PTEDUCAT             SUVR_temporalmetaroi         DMN_DAN 
+        1.664993e-04         2.773450e-08         4.478622e-03 
+
+
+Look at the coeffieents while we do cross-validation of the LASSO model 
+
+train_y=train[ ,c("MOCA”)]
+
+train_y <- as.numeric(unlist(train_y))
+
+train_x=model.matrix(MOCA ~PTEDUCAT DMN_DAN+SUVR_temporalmetaroi,train)[, -1] #Dropping the intercept column)
+
+
+ train_control<-trainControl(method="repeatedcv", number=20, repeats=10)
+
+mdl_lasso <- train(MOCA ~PTEDUCAT+ DMN_DAN+SUVR_temporalmetaroi,
+   data = train,
+   method = "glmnet",
+   metric = "RMSE",
+   preProcess = c("center", "scale"),
+   tuneGrid = expand.grid(
+     .alpha = 1,  # optimize a lasso regression
+     .lambda = seq(0, 5, length.out = 101)
+),
+   trControl = train_control)
+
+coef(mdl_lasso$finalModel, mdl_lasso$finalModel$lambdaOpt)
+
+Results LASSO 
+
+(Intercept)          25.5824176
+PTEDUCAT              0.7475156
+DMN_DAN              -0.6252223
+SUVR_temporalmetaroi -1.0338995
 
 ##### Make predictions on test data and test model performance #### 
 
@@ -487,30 +518,9 @@ rug(WildObj$bootEstParam[,4], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
 
 NOW look with gradient boosting machines in figure 5 feature importance
 
-train_y=train[ ,c("MOCA”)]
-
-train_y <- as.numeric(unlist(train_y))
-
-train_x=model.matrix(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,train)[, -1] #Dropping the intercept column)
 
 
- train_control<-trainControl(method="repeatedcv", number=20, repeats=10)
-
-mdl_lasso <- train(MOCA ~Age +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,
-   data = train,
-   method = "glmnet",
-   metric = "RMSE",
-   preProcess = c("center", "scale"),
-   tuneGrid = expand.grid(
-     .alpha = 1,  # optimize a lasso regression
-     .lambda = seq(0, 5, length.out = 101)
-),
-   trControl = train_control)
-
-coef(mdl_lasso$finalModel, mdl_lasso$finalModel$lambdaOpt)
-
-
-x=model.matrix(MOCA ~Age +PTEDUCAT+PTGENDER+ DMN_DAN,data)[, -1] #Dropping the intercept column)
+x=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN,data)[, -1] #Dropping the intercept column)
 
 y=Merged2[ ,c("MOCA")]
 
