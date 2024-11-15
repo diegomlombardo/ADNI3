@@ -39,21 +39,47 @@ corrplot(M$estimate, p.mat = testRes$p, method = 'color', diag = FALSE, type = '
           sig.level = c(0.001, 0.01, 0.05), pch.cex = 0.9,
           insig = 'label_sig', pch.col = 'grey20', order = 'AOE')
 
-just for demonstration that DMN DAN education level and ptau at Temporal Meta Roi are not correlated and then: ptau is not a confounding variable 
-in the assciation of DMN DAN and MOCA b) Education level can't mediate the correlation of DMN DAN and MOCA
+just for demonstrate that DMN DAN education level and ptau at Temporal Meta Roi are not correlated, and then: ptau is not a confounding variable 
+in the correlation between DMN DAN and MOCA b) Education level cannot mediate the correlation between DMN DAN and MOCA
 
-##### Look for group differences ########
+##### Look for group differences in DMN DAN anticorrelation in Fig 2 ########
 
-data5=read_excel("cognitive_clinics_anticorr.xlsx")
+install.packages("ggpubr")
 
-stat.test <- data5 %>%
-   t_test( DMN_DAN~ diagnoses,alternative = "two.sided", var.equal = FALSE)
+library(ggpubr)
 
+ my_comparisons1 <- list( c("A- C-","A+ C+"), c("A- C-","A+ C-"), c("A- C-","A+ C-"),c("A- C+","A+ C-"),c("A+ C-","A+ C+"),c("A+ C-","A+ C+"))
+
+ggboxplot(data, x = "category_amyloid", y = "DMN_DAN",
+          color = "category_amyloid", palette = "jco")+ 
+  stat_compare_means(comparisons = my_comparisons) # Add pairwise comparisons p-value
+
+
+my_comparisons2 <- list( c("A- C-","A+ C+"), c("A- C-","A+ C-"), c("A- C-","A+ C-"),c("A- C+","A+ C-"),c("A+ C-","A+ C+"),c("A+ C-","A+ C+"))
+
+ggboxplot(data, x = "category_amyloid", y = "DMN_DAN",
+          color = "category_amyloid", palette = "jco")+ 
+  stat_compare_means(comparisons = my_comparisons) # Add pairwise comparisons p-value
+
+
+then while patients were pooled aMCI + AD VS NC
+
+p <- ggboxplot(data, x = "DiagnosesII", y = "DMN_DAN",
+          color = "DiagnosesII", palette = "jco",
+          add = "jitter")
+#  Add p-value
+p + stat_compare_means()
+# Change method
+p + stat_compare_means(method = "wilcox.test")
 
 Run the regression linear models with k-folds cross-validation and boostrap in half-split sub-samples 
 
 ########## FIGURE 3 predictive models ################
 
+
+First 
+
+67 % training : 33 % test data 
 
 set.seed(15)
 
@@ -70,8 +96,19 @@ train_control<-trainControl(method="repeatedcv", number=5, repeats=5, search=“
 
 model <- train(MOCA ~Age+PTEDUCAT+ PTGENDER+ DMN_DAN, data =train, selectionFunction = "best",method = "lm", trControl = train_control, preProcess = c("center", "scale"),savePredictions= "final")
 
+
+Store de regression models for the 25 Folds cross-validation 
+ 
 fold_data <- lapply(model$control$index, function(index) train[index,]) %>% 
     bind_rows(.id = "Fold")
+
+Plot them superimposed as in Figure 2 panel A)
+
+plot1=ggplot(fold_data, aes(DMN_DAN,MOCA,col = Fold,fill=Fold),size=0.5, alpha=0.1) + 
+     geom_point(shape = 21, fill = "red3",
+               color = "red2", size = 3) +  theme_classic() + labs(x =  "DMN DAN anti correlation", y = "MOCA") + theme(axis.title = element_text(size = 15))+theme(axis.line = element_line(linewidth = 1, colour = "black"))+ theme(axis.text.y = element_text(size = 15))+ theme(axis.text.x = element_text(size = 15))+
+      geom_smooth(method = "lm", formula="y~x", alpha=0.01,show.legend = FALSE)  + scale_color_manual(values=c("Red","Purple","#006000","Brown","burlywood4","chocolate1","chartreuse4","blue4","darkorchid","darkmagenta","gray","khaki1","mediumorchid4","lightsteelblue1","navyblue","royalblue1","plum","sienna1","yellow3","blue4","tan1","violetred3","springgreen","yellow","burlywood4"))
+
 
 plot the boostrap distribution for every random-half partition 
 
