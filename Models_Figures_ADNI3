@@ -294,7 +294,7 @@ rug(WildObj$bootEstParam[,3], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
     quiet = getOption("warn") < 0)
 
 
-#### PLOT the superimposed  regression lines for the for 100 models (20 folds repeated 10 times) the first 25 FOLDS for visualization####
+#### PLOT the superimposed  regression lines for the  for models (5 folds repeated 10 times) the first 25 FOLDS for visualization####
 
  plot1=ggplot(fold_data, aes(DMN_DAN,MOCA,col = Fold,fill=Fold),size=0.5, alpha=0.1) + 
      geom_point(shape = 21, fill = "red3",
@@ -407,7 +407,6 @@ abline(reg1, col=“red”,lwd=5)
 #######Check in the half sample coefs the last graph of FIG3 #####
 
 
-
 FIGURE 5
 
 ###### see whether in a set of half partitions the results replicate in both samples for the interactions ####
@@ -438,7 +437,6 @@ par(mfrow=c(1,2))
 
 
 y=discovery[ ,c("MOCA")]
-
 
 
 x1=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN+PTEDUCAT*DMN_DAN, discovery)[, -1] #Dropping the intercept column)
@@ -482,13 +480,12 @@ rug(WildObj$bootEstParam[,4], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
     quiet = getOption("warn") < 0)
 
 
-NOW look with gradient boosting machines in figure 5 feature importance
-
+NOW look with gradient boosting machine in Figure 5 looking at feature importance
 
 
 x=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN,data)[, -1] #Dropping the intercept column)
 
-y=Merged2[ ,c("MOCA")]
+y=data[ ,c("MOCA")]
 
 fit.ridge <- ridge.proj(x, y,multiplecorr.method = "bonferroni")
  
@@ -522,7 +519,7 @@ reg1<-lm(pred.lasso ~Actual_MOCA)
 abline(reg1, col=“red”,lwd=5)
 
 
-######## I used GBM because in half split partitions the results may change due to change of seed.. needs additional conformation with hyperparameter-free methods if the interaction education DMN ~ DAN is there or not ############ 
+######## Fig 5 I used GBM because in half split partitions the results may change due to change of seed.. needs additional conformation with hyperparameter-free methods if the interaction education DMN ~ DAN is there or not ############ 
 
 library(gbm)
 
@@ -584,3 +581,56 @@ Supplementary FIGURE MOCA VS FD
 plot(data111$average_FD,data111$MOCA,main = "MOCA score vs mean head movement",xlab = "FD (in mm)",ylab = "MOCA score")
 
 abline(lm(MOCA ~average_FD)   theme_minimal()
+
+
+
+
+Suplementary Figures 
+
+set.seed(1)
+
+half_size <- floor(0.67* nrow(data)) 
+
+random_sample <- sample(seq_len(nrow(data)), size = half_size)
+
+train <- data[random_sample,]
+
+test <- data[-random_sample,]
+
+train_control<-trainControl(method="repeatedcv", number=5, repeats=5, search=“random”)
+
+
+model <- train(MOCA ~PTEDUCAT+ DMN_DAN+SUVR_temporalmetaroi, data =train, selectionFunction = "best",method = "lm", trControl = train_control, preProcess = c("center", "scale"),savePredictions= "final")
+
+
+Store de regression models for the 25 Folds cross-validation 
+ 
+fold_data <- lapply(model$control$index, function(index) train[index,]) %>% 
+    bind_rows(.id = "Fold")
+
+Plot them superimposed as in Figure 2 panel A)
+
+plot1=ggplot(fold_data, aes(DMN_DAN,MOCA,col = Fold,fill=Fold),size=0.5, alpha=0.1) + 
+     geom_point(shape = 21, fill = "red3",
+               color = "red2", size = 3) +  theme_classic() + labs(x =  "DMN DAN anti correlation", y = "MOCA") + theme(axis.title = element_text(size = 15))+theme(axis.line = element_line(linewidth = 1, colour = "black"))+ theme(axis.text.y = element_text(size = 15))+ theme(axis.text.x = element_text(size = 15))+
+      geom_smooth(method = "lm", formula="y~x", alpha=0.01,show.legend = FALSE)  + scale_color_manual(values=c("Red","Purple","#006000","Brown","burlywood4","chocolate1","chartreuse4","blue4","darkorchid","darkmagenta","gray","khaki1","mediumorchid4","lightsteelblue1","navyblue","royalblue1","plum","sienna1","yellow3","blue4","tan1","violetred3","springgreen","yellow","burlywood4"))
+
+Coefficients:
+                     Estimate Std. Error t value Pr(>|t|)    
+(Intercept)           24.9835     0.2529  98.784  < 2e-16 ***
+PTEDUCAT               0.7704     0.2577   2.990  0.00341 ** 
+DMN_DAN               -0.7959     0.2589  -3.074  0.00263 ** 
+SUVR_temporalmetaroi  -1.8708     0.2622  -7.134 8.77e-11 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 2.782 on 117 degrees of freedom
+Multiple R-squared:  0.4312,	Adjusted R-squared:  0.4166 
+F-statistic: 29.56 on 3 and 117 DF,  p-value: 2.669e-14
+
+model <- train(MOCA ~ DMN_DAN, data =train, selectionFunction = "best",method = "lm", trControl = train_control, preProcess = c("center", "scale"),savePredictions= "final")
+
+When looking only to DMN DAN anticorrelation the model explains the 8% of the variance 
+
+when looking at PET tau at the meta-temporal ROI explains 30% of the variance 
+
