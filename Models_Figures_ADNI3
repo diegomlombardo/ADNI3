@@ -23,7 +23,6 @@ library(egg)
 library(yarrr)
 
 
-
 data=read_excel("reviewed_database.xlsx")
 
 look for partial correlation at the whole-sample level 
@@ -305,6 +304,8 @@ rug(WildObj$bootEstParam[,3], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
 
 ### Tunning hyperparamater with a grid to replicavility and test model performance ### 
 
+This is the pannel B figure 3
+
 observed_C=test[ ,c("MOCA")]
 
 observed_C <- as.numeric(unlist(observed_C))
@@ -326,9 +327,9 @@ reg1<-lm(p_model~observed_C)
 abline(reg1, col=“red”,lwd=5)
 
 
-
 ### Now we go with LASSO ####
 
+Not shown in figures but these results are in Table 2
 
 x=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN+SUVR_temporalmetaro,data)[, -1] #Dropping the intercept column)
 
@@ -380,7 +381,11 @@ PTEDUCAT              0.7475156
 DMN_DAN              -0.6252223
 SUVR_temporalmetaroi -1.0338995
 
+
+
 ##### Make predictions on test data and test model performance #### 
+
+Test prediction accuracy in the LASSO model to see if is consistent with k-folds 
 
 pred.full <- predict(mdl_lasso,newdata=test)
 pred.lasso <- as.vector(predict(mdl_lasso,test , s=mdl_lasso$finalModel$lambdaOpt))
@@ -401,82 +406,6 @@ abline(reg1, col=“red”,lwd=5)
 
 #######Check in the half sample coefs the last graph of FIG3 #####
 
-
-#### You can run several replication and discovery samples and see if the IC lands outside 0 #####
-#### Testing the robustness of half-random split of the betas before ####
-
-library(parallel)
-library(readxl)
-library(sjPlot)
-
-library(boot)
-library(lmboot)
-
-It can be tested with several seeds which leads to equivalent results
-
-set.seed(1);
-
-half_size <- floor(0.50 * nrow(data))
-
-random_sample <- sample(seq_len(nrow(data)), size = half_size)
-
-discovery <- data[random_sample, ]
-
-replication <- data[-random_sample, ]
-
-
-dev.new()
-Seed=set.seed(1)
-
-
-
-par(mfrow=c(1,2))
-
-
-y=discovery[ ,c("MOCA")]
-y <- as.numeric(unlist(y))
-
-
-x1=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN, discovery)[, -1] #Dropping the intercept column)
-
-WildObj <- wild.boot(y ~ x1, B=60000, seed=Seed)
-WildObj$origEstParam
-mean(WildObj$bootEstParam[,3],)
-
-fig1=hist(WildObj$bootEstParam[,3],main=expression(paste(" boostraped samples of ",beta,~ "coeficients (linear regression) in discovery sample")),
-xlab= " Betas DMN DAN connectivity", ylab= "Count (in 60000 Boostrap Replications)",col=c("lightblue"),cex.axis = 1.5, cex.lab = 1.2)
-
-A=quantile(WildObj$bootEstParam[,3], probs=c(.025))
-B=quantile(WildObj$bootEstParam[,3], probs=c(.975))
-C=mean(WildObj$bootEstParam[,3],)
-abline(v = A, col="black", lwd=2, lty=1)
-abline(v = B, col="blue", lwd=2, lty=1)
-abline(v = C, col="red", lwd=3, lty=2)
-
-rug(WildObj$bootEstParam[,3], ticksize = 0.03, side = 1, lwd = 0.1, col = "purple",
-    quiet = getOption("warn") < 0)
-
-y=replication[ ,c("MOCA")]
-
-y <- as.numeric(unlist(y))
-x1=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN,replication)[, -1] #Dropping the intercept column)
-
-WildObj <- wild.boot(y ~ x1, B=60000, seed=Seed)
-WildObj$origEstParam
-mean(WildObj$bootEstParam[,3],)
-
-fig2=hist(WildObj$bootEstParam[,3],main=expression(paste(" boostraped samples of ",beta,~ "coeficients (linear regression) in replication sample")),
-xlab= " Betas DMN DAN connectivity", ylab= "Count (in 60000 Boostrap Replications)",col=c("lightblue"),cex.axis = 1.5, cex.lab = 1.2)
-
-A=quantile(WildObj$bootEstParam[,3], probs=c(.025))
-B=quantile(WildObj$bootEstParam[,3], probs=c(.975))
-C=mean(WildObj$bootEstParam[,3],)
-abline(v = A, col="black", lwd=2, lay=1)
-abline(v = B, col="blue", lwd=2, lty=1)
-abline(v = C, col="red", lwd=3, lty=2)
-
-rug(WildObj$bootEstParam[,3], ticksize = 0.03, side = 1, lwd = 0.1, col = "purple",
-    quiet = getOption("warn") < 0)
 
 
 FIGURE 5
@@ -614,39 +543,6 @@ model_gbmDMN_DAN = gbm(ge +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,,
 summary (model_gbmDMN_DAN)
 
 
-##### Look for group differences in DMN DAN anti correlation ########
-
-############ FIGURE 1 ############
- 
-
-data=read_excel("Master_final_data_base_DLombardo.xlsx”)
-
-stat.test1 <- data%>%
-   t_test( DMN_DAN~ diagnoses,alternative = "two.sided", var.equal = FALSE)
-
-stat.test2 <- data %>%
-   t_test( DMN_DAN~ category,alternative = "two.sided", var.equal = FALSE)
-
-
-summary(stat_test1)
-
-summary(stat_test2) 
- 
-
-par(mfrow=c(1,2))
-
-library(ggpubr)
-
-
-
-ggboxplot(data, x = "category", y = "DMN_DAN",
-          color = "category", palette=c("#FC4E07","#BB3099","#EE0099","#0000AC"),add="jitter",notch = TRUE)
-
- stat_compare_means(comparisons = my_comparisons)
- stat_compare_means(label.y = 50) 
-
-ggboxplot(data, x = "diagnoses", y = "DMN_DAN",
-          color = "diagnoses",palette = c("#00AFBB", "#E7B800", "#FC4E07"),add="jitter",notch = TRUE)
 
 ##### TABLE1 #### 
 
