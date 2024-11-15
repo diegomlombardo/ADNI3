@@ -634,3 +634,7 @@ When looking only to DMN DAN anticorrelation the model explains the 8% of the va
 
 when looking at PET tau at the meta-temporal ROI explains 30% of the variance 
 
+Knowing that while both are covariates the prediction of DMN_DAN on cognition remains significant which agrees with the regression LASSO 
+coefficients for DMN DAN that do not shrink to zero when PET Tau was included in the 
+ regression model
+
