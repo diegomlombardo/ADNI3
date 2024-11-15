@@ -350,16 +350,22 @@ Resutls Robust LASSO while includign SUVR_temporalmetaroi
         1.664993e-04         2.773450e-08         4.478622e-03 
 
 
-Look at the coeffieents while we do cross-validation of the LASSO model 
+Look at the coeffieents while we do nested cross-validation of the LASSO models
 
-train_y=train[ ,c("MOCA”)]
+set.seed(1)
 
-train_y <- as.numeric(unlist(train_y))
+half_size <- floor(0.67* nrow(data)) 
+
+random_sample <- sample(seq_len(nrow(data)), size = half_size)
+
+train <- data[random_sample,]
+
+test <- data[-random_sample,]
+
 
 train_x=model.matrix(MOCA ~PTEDUCAT DMN_DAN+SUVR_temporalmetaroi,train)[, -1] #Dropping the intercept column)
 
-
- train_control<-trainControl(method="repeatedcv", number=20, repeats=10)
+ train_control<-trainControl(method="repeatedcv", number=10, repeats=10)
 
 mdl_lasso <- train(MOCA ~PTEDUCAT+ DMN_DAN+SUVR_temporalmetaroi,
    data = train,
@@ -376,11 +382,10 @@ coef(mdl_lasso$finalModel, mdl_lasso$finalModel$lambdaOpt)
 
 Results LASSO 
 
-(Intercept)          25.5824176
-PTEDUCAT              0.7475156
-DMN_DAN              -0.6252223
-SUVR_temporalmetaroi -1.0338995
-
+(Intercept)          24.9834711
+PTEDUCAT              0.7615224
+DMN_DAN              -0.7871511
+SUVR_temporalmetaroi -1.8641643
 
 
 ##### Make predictions on test data and test model performance #### 
