@@ -80,7 +80,7 @@ First
 
 67 % training : 33 % test data 
 
-set.seed(15)
+set.seed(7)
 
 half_size <- floor(0.67* nrow(data)) 
 
@@ -167,7 +167,7 @@ rug(WildObj$bootEstParam[,5], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
 
 To test wheter different random-split partitions affects the results: 
 
-set.seed(55)
+set.seed(77)
 
 half_size <- floor(0.67* nrow(data)) 
 
