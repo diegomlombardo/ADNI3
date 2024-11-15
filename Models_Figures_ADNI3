@@ -643,3 +643,55 @@ Knowing that while both are covariates the prediction of DMN_DAN on cognition re
 coefficients for DMN DAN that do not shrink to zero when PET Tau was included in the 
  regression model
 
+Get the tables for the distribution of variables in the half split partition for figure 2 and 3
+
+set.seed(7);
+
+half_size <- floor(0.50 * nrow(data))
+
+random_sample <- sample(seq_len(nrow(data)), size = half_size)
+
+discovery <- data[random_sample, ]
+
+replication <- data[-random_sample, ]
+
+table1::label(discovery$Diagnoses)  <- "Amyloid and cognitive status"
+
+table1::label(discovery$Age)  <- "Age (years)"
+table1::label(discovery$PTEDUCAT)  <- "Education (years)"
+table1::label(discovery$PTGENDER)  <- "Sex"
+
+table1::label(discovery$MOCA)  <- "MOCA score"
+
+table1::label(discovery$MOCA)  <- "MOCA score"
+
+table1::label(discovery$MMSCORE)  <- "MM score"
+
+table1::label(discovery$DMN_DAN)  <- "DMN DAN anticorrelation"
+
+table1::label(discovery$SUVR_temporalmetaroi)  <- "PET SUVR Temporal meta ROi"
+
+table1 <- tableby(discovery$Diagnoses~ discovery$Age + discovery$PTEDUCAT+ discovery$PTGENDER+ discovery$MOCA+discovery$DMN_DAN+discovery$MMSE+ discovery$SUVR_temporalmetaroi, data=discovery)
+ write2word(table1,"~/trash3.doc",title= "Table 2")
+
+
+table1::label(replication$Diagnoses)  <- "Amyloid and cognitive status"
+
+table1::label(replication$Age)  <- "Age (years)"
+table1::label(replication$PTEDUCAT)  <- "Education (years)"
+table1::label(replication$PTGENDER)  <- "Sex"
+
+table1::label(replication$MOCA)  <- "MOCA score"
+
+table1::label(replication$MOCA)  <- "MOCA score"
+
+table1::label(replication$MMSCORE)  <- "MM score"
+
+table1::label(replication$DMN_DAN)  <- "DMN DAN anticorrelation"
+
+table1::label(replication$SUVR_temporalmetaroi)  <- "PET SUVR Temporal meta ROi"
+
+table2 <- tableby(replication$Diagnoses~ replication$Age + replication$PTEDUCAT+ replication$PTGENDER+ replication$MOCA+discovery$DMN_DAN+replication$MMSE+ replication$SUVR_temporalmetaroi, data=replication)
+write2word(table,title= “Table 1”)
+ write2word(table2,"~/trash4.doc",title= "Table 2")
+
