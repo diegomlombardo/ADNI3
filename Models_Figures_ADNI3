@@ -325,9 +325,46 @@ reg1<-lm(p_model~observed_C)
 abline(reg1, col=“red”,lwd=5)
 
 
-### Now we go with LASSO ####
+### Now LASSO ####
 
 Not shown in figures but these results are in Table 2
+
+train_y=train[ ,c("MOCA”)]
+
+train_y <- as.numeric(unlist(train_y))
+
+train_x=model.matrix(MOCA ~Age +PTEDUCAT+ DMN_DAN+ SUVR_temporalmetaroi,train)[, -1] #Dropping the intercept column)
+
+
+
+ ridge1_cv <- cv.glmnet(x = train_x, y =train_y,
+                        ## type.measure: loss to use for cross-validation.
+                        type.measure = "mse",
+                        ## K = 10 is the default.
+                        nfold = 10,
+                        ## ‘alpha = 1’ is the lasso penalty, and ‘alpha = 0’ the ridge penalty.
+                        alpha = 0)
+ plot(ridge1_cv)
+ best_ridge_coef <- as.numeric(coef(ridge1_cv, s = ridge1_cv$lambda.1se))[-1]
+
+AND LASSO repeated cv
+
+train_control<-trainControl(method="repeatedcv", number=20, repeats=10)
+
+mdl_lasso <- train(MOCA ~PTEDUCAT+ DMN_DAN+ SUVR_temporalmetaroi,
+   data = train,
+   method = "glmnet",
+   metric = "RMSE",
+   preProcess = c("center", "scale"),
+   tuneGrid = expand.grid(
+     .alpha = 1,  # optimize a lasso regression
+     .lambda = seq(0, 5, length.out = 101)
+),
+   trControl = train_control)
+
+coef(mdl_lasso$finalModel, mdl_lasso$finalModel$lambdaOpt)
+
+
 
 x=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN+SUVR_temporalmetaro,data)[, -1] #Dropping the intercept column)
 
