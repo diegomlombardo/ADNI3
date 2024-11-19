@@ -32,14 +32,15 @@ pcor(sample_data,method = c("kendall"))
 sample_data <- subset(data,
                  select = c(PTEDUCAT,DMN_DAN,SUVR_temporalmetaro)
 
+M = pcor(sample_data)
 testRes = cor.mtest(sample_data, conf.level = 0.95)
 
 corrplot(M$estimate, p.mat = testRes$p, method = 'color', diag = FALSE, type = 'upper',
           sig.level = c(0.001, 0.01, 0.05), pch.cex = 0.9,
           insig = 'label_sig', pch.col = 'grey20', order = 'AOE')
 
-just for demonstrate that DMN DAN education level and ptau at Temporal Meta Roi are not correlated, and then: ptau is not a confounding variable 
-in the correlation between DMN DAN and MOCA b) Education level cannot mediate the correlation between DMN DAN and MOCA
+############ To  demonstrate that DMN DAN education level and ptau at the Temporal-Meta ROI are not correlated, and then: A) ptau is not a confounding variable 
+in the correlation between DMN DAN and MOCA B) Education level cannot mediate the correlation between DMN DAN and MOCA
 
 ##### Look for group differences in DMN DAN anticorrelation in Fig 2 ########
 
@@ -75,10 +76,7 @@ Run the regression linear models with k-folds cross-validation and boostrap in h
 
 ########## FIGURE 3 predictive models ################
 
-
-First 
-
-67 % training : 33 % test data 
+### 67 % training : 33 % test data #### 
 
 set.seed(1)
 
@@ -164,8 +162,7 @@ rug(WildObj$bootEstParam[,4], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
     quiet = getOption("warn") < 0)
 
 
-
-To test wheter different random-split partitions affects the results: 
+##### To test wheter different random-split partitions affects the results ###########
 
 set.seed(44)
 
@@ -302,7 +299,7 @@ rug(WildObj$bootEstParam[,3], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
 
 ### Tunning hyperparamater with a grid to replicavility and test model performance ### 
 
-This is the pannel B figure 3
+#### This is the pannel B figure 3 ##### 
 
 observed_C=test[ ,c("MOCA")]
 
@@ -316,7 +313,6 @@ trControl=train_control, tunegrid=coco )
 p_model<-predict(mdl,newdata=test)
 r_model= cor.test (p_model,observed_C)
 
-
 plot2=plot(p_model,observed_C, xlab="Observed MOCA" ,
          ylab="Predicted MOCA (repeated kflolds)",font.lab=1,cex.lab=1, cex.sub=1,pch = 19, frame = FALSE)
 
@@ -324,8 +320,7 @@ reg1<-lm(p_model~observed_C)
 
 abline(reg1, col=“red”,lwd=5)
 
-
-### Now LASSO ####
+### Now with LASSO and ridge regression we've look wheter the resutls stay ####
 
 Not shown in figures but these results are in Table 2
 
@@ -334,8 +329,6 @@ train_y=train[ ,c("MOCA”)]
 train_y <- as.numeric(unlist(train_y))
 
 train_x=model.matrix(MOCA ~Age +PTEDUCAT+ DMN_DAN+ SUVR_temporalmetaroi,train)[, -1] #Dropping the intercept column)
-
-
 
  ridge1_cv <- cv.glmnet(x = train_x, y =train_y,
                         ## type.measure: loss to use for cross-validation.
@@ -346,12 +339,17 @@ train_x=model.matrix(MOCA ~Age +PTEDUCAT+ DMN_DAN+ SUVR_temporalmetaroi,train)[,
                         alpha = 0)
  plot(ridge1_cv)
  best_ridge_coef <- as.numeric(coef(ridge1_cv, s = ridge1_cv$lambda.1se))[-1]
+Age           Education  DMN_DAN      P Tau
+-0.07762397  0.28092831 -1.82225008 -2.99078929
 
-AND LASSO repeated cv
+Age almos srink to 0...
+
+#### AND LASSO repeated cv ###### 
+
 
 train_control<-trainControl(method="repeatedcv", number=20, repeats=10)
 
-mdl_lasso <- train(MOCA ~PTEDUCAT+ DMN_DAN+ SUVR_temporalmetaroi,
+mdl_lasso <- train(MOCA ~ Age+ PTEDUCAT+ DMN_DAN+ SUVR_temporalmetaroi,
    data = train,
    method = "glmnet",
    metric = "RMSE",
@@ -364,6 +362,16 @@ mdl_lasso <- train(MOCA ~PTEDUCAT+ DMN_DAN+ SUVR_temporalmetaroi,
 
 coef(mdl_lasso$finalModel, mdl_lasso$finalModel$lambdaOpt)
 
+###### Indeed Age shrink to as a factor and DMN DAN still there as an independent factor predicting MOCA here with 20 folds 10 repeated 10 times some researchers support 
+that may lead to overfiiting (this is way I did it 10 folds 10 times bellow) ######
+
+5 x 1 sparse Matrix of class "dgCMatrix"
+                             s1
+(Intercept)          25.0330579
+Age                  -0.9437584
+PTEDUCAT              1.1147966
+DMN_DAN              -0.5783331
+SUVR_temporalmetaroi -1.9397531
 
 
 x=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN+SUVR_temporalmetaro,data)[, -1] #Dropping the intercept column)
@@ -385,7 +393,7 @@ Resutls Robust LASSO while includign SUVR_temporalmetaroi
         1.664993e-04         2.773450e-08         4.478622e-03 
 
 
-Look at the coeffieents while we do nested cross-validation of the LASSO models
+####### Look at the coeffieents while we do nested cross-validation of the LASSO models 10 times 10 repetitions ###########
 
 set.seed(1)
 
