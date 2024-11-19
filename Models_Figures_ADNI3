@@ -234,7 +234,7 @@ rug(WildObj$bootEstParam[,4], ticksize = 0.03, side = 1, lwd = 0.1, col = "purpl
 model <- train(MOCA ~PTEDUCAT+ PTGENDER+ DMN_DAN, data =train, selectionFunction = "best",method = "lm", trControl = train_control, preProcess = c("center", "scale"),savePredictions= "final")
 
 
-Having in account confounding factors such as PET tau at temporal meta ROIs
+##### Having in account confounding factors such as PET tau at temporal meta ROIs ### 
 
 set.seed(156);
 
@@ -362,7 +362,7 @@ mdl_lasso <- train(MOCA ~ Age+ PTEDUCAT+ DMN_DAN+ SUVR_temporalmetaroi,
 
 coef(mdl_lasso$finalModel, mdl_lasso$finalModel$lambdaOpt)
 
-###### Indeed Age shrink to as a factor and DMN DAN still there as an independent factor predicting MOCA here with 20 folds 10 repeated 10 times some researchers support 
+###### Indeed Age shrink to as a factor and DMN DAN remains as an independent factor predicting MOCA here with 20 folds 10 repeated 10 times some researchers support 
 that may lead to overfiiting (this is way I did it 10 folds 10 times bellow) ######
 
 5 x 1 sparse Matrix of class "dgCMatrix"
@@ -405,10 +405,9 @@ train <- data[random_sample,]
 
 test <- data[-random_sample,]
 
-
 train_x=model.matrix(MOCA ~PTEDUCAT DMN_DAN+SUVR_temporalmetaroi,train)[, -1] #Dropping the intercept column)
 
- train_control<-trainControl(method="repeatedcv", number=10, repeats=10)
+train_control<-trainControl(method="repeatedcv", number=10, repeats=10)
 
 mdl_lasso <- train(MOCA ~PTEDUCAT+ DMN_DAN+SUVR_temporalmetaroi,
    data = train,
@@ -423,7 +422,7 @@ mdl_lasso <- train(MOCA ~PTEDUCAT+ DMN_DAN+SUVR_temporalmetaroi,
 
 coef(mdl_lasso$finalModel, mdl_lasso$finalModel$lambdaOpt)
 
-Results LASSO 
+## Results LASSO  ### 
 
 (Intercept)          24.9834711
 PTEDUCAT              0.7615224
@@ -433,7 +432,7 @@ SUVR_temporalmetaroi -1.8641643
 
 ##### Make predictions on test data and test model performance #### 
 
-Test prediction accuracy in the LASSO model to see if is consistent with k-folds 
+### Test prediction accuracy in the LASSO model to see if is consistent with k-fold #### 
 
 pred.full <- predict(mdl_lasso,newdata=test)
 pred.lasso <- as.vector(predict(mdl_lasso,test , s=mdl_lasso$finalModel$lambdaOpt))
@@ -455,7 +454,7 @@ abline(reg1, col=“red”,lwd=5)
 #######Check in the half sample coefs the last graph of FIG3 #####
 
 
-FIGURE 5
+## FIGURE 5 ### 
 
 ###### see whether in a set of half partitions the results replicate in both samples for the interactions ####
 
@@ -569,23 +568,22 @@ abline(reg1, col=“red”,lwd=5)
 
 ######## Fig 5 I used GBM because in half split partitions the results may change due to change of seed.. needs additional conformation with hyperparameter-free methods if the interaction education DMN ~ DAN is there or not ############ 
 
-library(gbm)
+model_gbm = gbm(MOCA ~ Age+PTEDUCAT+DMN_DAN+SUVR_temporalmetaroi,
+ 
+                 data = train,
+ 
+                 distribution = "gaussian",
+ 
+                 cv.folds = 10,
+ 
+                 shrinkage = .01,
+ 
+                 n.minobsinnode = 10,
+ 
+                 n.trees = 1000)
+ 
+ summary (model_gbm)
 
-model_gbmDMN_DAN = gbm(ge +PTEDUCAT+ PTGENDER+ DMN_DAN+DMN_DAN*PTEDUCAT,,
-
-                data = train,
-
-                distribution = "gaussian",
-
-                cv.folds = 10,
-
-                shrinkage = .01,
-
-                n.minobsinnode = 10,
-
-                n.trees = 1000)
-
-summary (model_gbmDMN_DAN)
 
 
 
