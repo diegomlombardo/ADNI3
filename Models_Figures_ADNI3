@@ -393,7 +393,7 @@ Resutls Robust LASSO while includign SUVR_temporalmetaroi
         1.664993e-04         2.773450e-08         4.478622e-03 
 
 
-####### Look at the coeffieents while we do nested cross-validation of the LASSO models 10 times 10 repetitions ###########
+####### Look at the coefficients while we do nested cross-validation of the LASSO models 10 times 10 repetitions ###########
 
 set.seed(1)
 
