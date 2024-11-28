@@ -331,7 +331,7 @@ reg1<-lm(p_model~observed_C)
 
 abline(reg1, col=“red”,lwd=5)
 
-### Now with LASSO and ridge regression we've look wheter the resutls stay ####
+### Now with LASSO and ridge regression: look wheter the resutls stay ####
 
 Not shown in figures but these results are in Table 2
 
@@ -353,12 +353,13 @@ train_x=model.matrix(MOCA ~Age +PTEDUCAT+ DMN_DAN+ SUVR_temporalmetaroi,train)[,
                         alpha = 0)
  plot(ridge1_cv)
  best_ridge_coef <- as.numeric(coef(ridge1_cv, s = ridge1_cv$lambda.1se))[-1]
+
 Age           Education  DMN_DAN      P Tau
 -0.07762397  0.28092831 -1.82225008 -2.99078929
 
 Age almos srink to 0...
 
-#### AND LASSO repeated cv ###### 
+#### AND LASSO cross-validated with repeated cv ###### 
 
 
 train_control<-trainControl(method="repeatedcv", number=20, repeats=10)
@@ -375,6 +376,14 @@ mdl_lasso <- train(MOCA ~ Age+ PTEDUCAT+ DMN_DAN+ SUVR_temporalmetaroi,
    trControl = train_control)
 
 coef(mdl_lasso$finalModel, mdl_lasso$finalModel$lambdaOpt)
+                             s1
+(Intercept)          24.9834711
+Age                  -0.6761096
+PTEDUCAT              0.8046954
+DMN_DAN              -0.5973258
+SUVR_temporalmetaroi -1.9753868
+
+### Is true that PET Tau measured as SUVR_temporalmetaroi explains most of the variability in cognition but DMN-DAN stay as a significant fMRI factor explaining cognitive decline in this cohort#####
 
 ###### Indeed Age shrink to as a factor and DMN DAN remains as an independent factor predicting MOCA here with 20 folds 10 repeated 10 times some researchers support 
 that may lead to overfiiting (this is way I did it 10 folds 10 times bellow) ######
