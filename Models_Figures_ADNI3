@@ -396,6 +396,11 @@ PTEDUCAT              1.1147966
 DMN_DAN              -0.5783331
 SUVR_temporalmetaroi -1.9397531
 
+#### Now get pvalues for LASSO regression at the whole-sample (p-values based on the lasso projection method) Bonferroni corrected for multiple comparation ##### 
+
+install.packages("hdi")
+library(hdi)
+ 
 
 x=model.matrix(MOCA ~ PTEDUCAT+ DMN_DAN+SUVR_temporalmetaro,data)[, -1] #Dropping the intercept column)
 
