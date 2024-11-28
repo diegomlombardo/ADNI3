@@ -339,6 +339,9 @@ train_y=train[ ,c("MOCA”)]
 
 train_y <- as.numeric(unlist(train_y))
 
+data$SUVR_temporalmetaroi=as.numeric(data$SUVR_temporalmetaroi)
+
+
 train_x=model.matrix(MOCA ~Age +PTEDUCAT+ DMN_DAN+ SUVR_temporalmetaroi,train)[, -1] #Dropping the intercept column)
 
  ridge1_cv <- cv.glmnet(x = train_x, y =train_y,
