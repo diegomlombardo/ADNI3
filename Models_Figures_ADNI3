@@ -594,7 +594,7 @@ install.packages("gbm")
 library (gbm)
 model_gbm = gbm(MOCA ~ Age+PTEDUCAT+DMN_DAN+SUVR_temporalmetaroi,
  
-                 data = train,
+                 data = data,
  
                  distribution = "gaussian",
  
