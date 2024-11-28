@@ -590,7 +590,8 @@ abline(reg1, col=“red”,lwd=5)
 
 
 ######## Fig 5 I used GBM because in half split partitions the results may change due to change of seed.. needs additional conformation with hyperparameter-free methods if the interaction education DMN ~ DAN is there or not ############ 
-
+install.packages("gbm")
+library (gbm)
 model_gbm = gbm(MOCA ~ Age+PTEDUCAT+DMN_DAN+SUVR_temporalmetaroi,
  
                  data = train,
