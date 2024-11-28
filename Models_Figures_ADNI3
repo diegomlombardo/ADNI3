@@ -110,7 +110,7 @@ plot1=ggplot(fold_data, aes(DMN_DAN,MOCA,col = Fold,fill=Fold),size=0.5, alpha=0
 ## plot the boostrap distribution for every random-half partition ### 
 
 install.packages("lmboot")
-Seed=set.seed(1)
+Seed=set.seed(11)
 library (lmboot)
 
 library(parallel)
