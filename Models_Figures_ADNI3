@@ -52,14 +52,14 @@ library(ggpubr)
 
 ggboxplot(data, x = "category_amyloid", y = "DMN_DAN",
           color = "category_amyloid", palette = "jco")+ 
-  stat_compare_means(comparisons = my_comparisons) # Add pairwise comparisons p-value
+  stat_compare_means(comparisons = my_comparisons1) # Add pairwise comparisons p-value
 
 
 my_comparisons2 <- list( c("A- C-","A+ C+"), c("A- C-","A+ C-"), c("A- C-","A+ C-"),c("A- C+","A+ C-"),c("A+ C-","A+ C+"),c("A+ C-","A+ C+"))
 
 ggboxplot(data, x = "category_amyloid", y = "DMN_DAN",
           color = "category_amyloid", palette = "jco")+ 
-  stat_compare_means(comparisons = my_comparisons) # Add pairwise comparisons p-value
+  stat_compare_means(comparisons = my_comparisons2) # Add pairwise comparisons p-value
 
 
 then while patients were pooled aMCI + AD VS NC
