@@ -765,3 +765,71 @@ table2 <- tableby(replication$Diagnoses~ replication$Age + replication$PTEDUCAT+
 write2word(table,title= “Table 1”)
  write2word(table2,"~/trash4.doc",title= "Table 2")
 
+# Additional analysis # 
+
+# Create notched boxplot
+boxplot(FD ~ category_amyloid2, 
+        data = merged_unique,
+        notch = TRUE,
+        col = "skyblue",
+        main = "FD by Amyloid Category based  in 0.79 PET SUVR threshold",
+        xlab = "Amyloid Category",
+        ylab = "Framewise Displacement (FD)")
+
+# Run ANOVA
+anova_result <- aov(FD ~ category_amyloid2, data = merged_unique)
+pval <- summary(anova_result)[[1]]["Pr(>F)"][1]
+
+# Add p-value text to the plot
+legend("topright", legend = paste0("ANOVA p = ", signif(pval, 3)), bty = "n")
+
+
+# Create notched boxplot
+boxplot(FD ~ category_amyloid, 
+        data = data_final,
+        notch = TRUE,
+        col = "skyblue",
+        main = "FD by Amyloid Category based  in 1.11 PET SUVR threshold",
+        xlab = "Amyloid Category",
+        ylab = "Framewise Displacement (FD)")
+
+# Run ANOVA
+anova_result <- aov(FD ~ category_amyloid, data = data_final)
+pval <- summary(anova_result)[[1]]["Pr(>F)"][1]
+
+# Add p-value text to the plot
+legend("topright", legend = paste0("ANOVA p = ", signif(pval, 3)), bty = "n")
+
+Re-do table 2 and 3
+
+# Install packages if not already installed
+install.packages(c("officer", "flextable"))
+
+# Load required libraries
+library(officer)
+library(flextable)
+
+# Create the data frame
+table_data <- data.frame(
+  Variable = c("DMN-DAN anticorrelation", 
+               "DMN-DAN ~ Education", 
+               "Age", 
+               "Education"),
+  Discovery = c("-3.7 (-5.9, -0.5)", "-0.03 (-0.1, 1.2)", "-0.05 (-1.9, 0.08)", "0.6 (0.3, 0.9)"),
+  Replication = c("-3.6 (-5.8, -0.2)", "1.2 (0.1, 2.4)", "-0.1 (-0.2, 0.007)", "0.38 (0.06, 0.7)"),
+  Lasso_Beta = c("-2.87 (1)", "0", "0", "0.5 (0.12)"),
+  Repeated_Kfolds = c("-2.9 (0.3) (*)", "0.5 (1.7)", "-0.65 (0.2) (*)", "1.6 (0.3) (**)")
+)
+
+# Convert to flextable
+ft <- flextable(table_data)
+ft <- theme_vanilla(ft)
+ft <- autofit(ft)
+
+# Create a Word document and add the table
+doc <- read_docx()
+doc <- body_add_par(doc, "Table 1. Estimates of β under Different Models and Resampling Techniques", style = "heading 1")
+doc <- body_add_flextable(doc, value = ft)
+
+# Save the Word document
+print(doc, target = "Beta_Estimates_Table.docx")
