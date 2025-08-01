@@ -1,0 +1,80 @@
+% --- Configuration ---
+dmn_idx = 2;   % Default Mode Network
+dan_idx = 10;  % Dorsal Attention Network
+highlight_ids = [dmn_idx, dan_idx];
+highlight_names = {'Default Mode Network', 'Dorsal Attention Network'};  % Clean labels
+highlight_colors = [1 0 0; 1 1 1];  % Red, White
+gray_color = [0.6 0.6 0.6];        % Gray for other networks
+alpha_val = 0.15;                  % Transparency for lines
+time_points = 1:192;
+font_size = 16;                    % Font size for plot text
+
+% --- Create figure with dark background ---
+figure;
+set(gcf, 'Color', 'k');  % Set figure background to black
+axes_handle = gca;
+set(axes_handle, ...
+    'Color', 'k', ...
+    'XColor', 'w', ...
+    'YColor', 'w', ...
+    'FontSize', font_size);
+hold on;
+
+% --- Plot all networks (gray) and highlighted networks (red & white) ---
+for subj = 1:192
+    var_name = sprintf('M%d', subj);
+    
+    if evalin('base', sprintf('exist(''%s'', ''var'')', var_name))
+        data = evalin('base', var_name);  % 192 x 40 matrix
+
+        % Plot all non-highlighted networks in gray
+        for net_id = 1:40
+            if ~ismember(net_id, highlight_ids)
+                plot(time_points, data(:, net_id), ...
+                    'Color', [gray_color alpha_val], ...
+                    'LineWidth', 0.8, ...
+                    'HandleVisibility', 'off');  % Hide in legend
+            end
+        end
+
+        % Plot highlighted networks (DMN and DAN)
+        for i = 1:length(highlight_ids)
+            net_id = highlight_ids(i);
+            plot(time_points, data(:, net_id), ...
+                'Color', [highlight_colors(i, :) alpha_val], ...
+                'LineWidth', 1.5, ...
+                'HandleVisibility', 'off');  % Hide in legend
+        end
+    end
+end
+
+% --- Overlay mean time series for highlighted networks (with legend) ---
+for i = 1:length(highlight_ids)
+    net_id = highlight_ids(i);
+    all_series = [];
+
+    for subj = 1:192
+        var_name = sprintf('M%d', subj);
+        if evalin('base', sprintf('exist(''%s'', ''var'')', var_name))
+            data = evalin('base', var_name);
+            all_series = [all_series; data(:, net_id)'];
+        end
+    end
+
+    if ~isempty(all_series)
+        mean_curve = mean(all_series, 1);
+        plot(time_points, mean_curve, ...
+            'Color', highlight_colors(i, :), ...
+            'LineWidth', 3, ...
+            'DisplayName', highlight_names{i});  % Show in legend
+    end
+end
+
+% --- Final plot formatting ---
+xlabel('Time Points', 'Color', 'w', 'FontSize', font_size);
+ylabel('BOLD Signal (Z-scored)', 'Color', 'w', 'FontSize', font_size);
+title('BOLD Time Series – DMN & DAN', 'Color', 'w', 'FontSize', font_size + 2);
+legend('TextColor', 'w', 'FontSize', font_size, 'Location', 'best');
+grid on;
+hold off;
+
